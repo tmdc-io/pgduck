@@ -78,3 +78,5 @@ target/
 # Vim
 *.sw*
 .DS_Store
+.idea
+venv

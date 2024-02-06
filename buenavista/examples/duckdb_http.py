@@ -150,7 +150,7 @@ if __name__ == "__main__":
         db = duckdb.connect()
 
     bv_host = "127.0.0.1"
-    bv_port = 8080
+    bv_port = 8282
     if "BUENAVISTA_HOST" in os.environ:
         bv_host = os.environ["BUENAVISTA_HOST"]
     if "BUENAVISTA_PORT" in os.environ:

@@ -1,14 +1,14 @@
 version: '3.7'
 
 services:
-
-  cloudbeaver:
-    image: dbeaver/cloudbeaver:latest
-    ports:
-      - "8978:8978"
-
-  buenavista:
-    image: buenavista
+  pgduck:
+    image: rubiklabs/pgduck:0.0.3
     environment:
       - BUENAVISTA_HOST=0.0.0.0
       - BUENAVISTA_PORT=5433
+    ports:
+      - 5433:5433
+      - 8282:8282
+    volumes:
+      - ./data:/data
+      - /Users/devendra/work/dataos/flare/dataout:/dataos
