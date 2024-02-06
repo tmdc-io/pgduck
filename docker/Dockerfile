@@ -22,5 +22,5 @@ RUN python setup.py install
 EXPOSE 5433
 
 ENTRYPOINT ["/tini", "--"]
-# CMD python -m buenavista.examples.duckdb_postgres
-CMD python -m buenavista.examples.duckdb_http
+CMD python -m buenavista.examples.duckdb_postgres
+# CMD python -m buenavista.examples.duckdb_http
