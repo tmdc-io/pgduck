@@ -1,7 +1,11 @@
 #! make
+VERSION  = 0.0.3
 
 build:
-	docker build -t rubiklabs/pgduck:0.0.3 -f Dockerfile ..
+	docker build -t rubiklabs/pgduck:$(VERSION) -f Dockerfile ..
+
+push:
+	docker push rubiklabs/pgduck:$(VERSION)
 
 up:
 	docker-compose up -d
