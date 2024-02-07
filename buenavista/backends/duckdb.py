@@ -141,7 +141,13 @@ class DuckDBSession(Session):
         return self._cursor.query(f"select * from {table}")
 
     def rewrite_sql(self, sql: str) -> str:
-        """Some minimalist SQL rewrites, inspired by postlite, to make DBeaver less unhappy."""
+        if sql.startswith("""SELECT d.datname AS "Name", pg_catalog.PG_GET_USERBYID(d.datdba)"""):
+            sql = """SELECT d.datname AS "Name", 'NA' AS "Owner", 'UTF-8' AS "Encoding", 
+            'en_US.utf8' AS "Collate", 'en_US.utf8' AS "Ctype", '' AS "Access privileges" FROM pg_catalog.pg_database
+             AS d ORDER BY 1"""
+        # removing calls to inspect user using standard postgres function to return NA
+        sql = sql.replace("pg_catalog.PG_GET_USERBYID(c.relowner) AS \"Owner\"", "'NA' as Owner")
+        sql = sql.replace("pg_catalog.PG_GET_USERBYID(c.relowner) AS \"Owner\"", "'NA' as Owner")
         if match := re.search(r"PREPARE\s+(\w+)\s+FROM", sql):
             stmt = match.group(1)
             target = f"PREPARE {stmt} FROM"
