@@ -1,4 +1,4 @@
-duckdb
+duckdb==0.10.0
 fastapi[all]
 psycopg
 psycopg-pool

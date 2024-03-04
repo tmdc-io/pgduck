@@ -1,8 +1,8 @@
 #! make
-VERSION  = 0.0.3
+VERSION  = 0.0.10
 
 build:
-	docker build -t rubiklabs/pgduck:$(VERSION) -f Dockerfile ..
+	docker build -t rubiklabs/pgduck:$(VERSION) -f Dockerfile.pipeline ..
 
 push:
 	docker push rubiklabs/pgduck:$(VERSION)

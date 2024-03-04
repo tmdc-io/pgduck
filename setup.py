@@ -30,9 +30,10 @@ setup(
         "fastapi>=0.109.0,<1.0.0",
         "pydantic>=2,<3",
         "sqlglot",
+        "psycopg_pool"
     ],
     extras_require={
-        "duckdb": ["duckdb", "pyarrow"],
+        "duckdb": ["duckdb==0.10.0", "pyarrow"],
         "postgres": ["psycopg", "psycopg-pool"],
     },
 )

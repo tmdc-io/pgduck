@@ -1,0 +1,62 @@
+FROM docker.io/python:3.11.1 as builder
+
+# Install basic dependencies
+RUN apt-get update && apt-get install -y \
+    git curl build-essential libssl-dev zlib1g-dev \
+    libbz2-dev libreadline-dev libsqlite3-dev wget llvm \
+    make cmake
+
+# Create vcpkg directory
+RUN mkdir -p /usr/local/vcpkg
+
+# Download and install vcpkg
+WORKDIR /usr/local/vcpkg
+
+RUN git clone https://github.com/microsoft/vcpkg .
+
+RUN apt-get install -y zip unzip tar && chmod +x bootstrap-vcpkg.sh && ./bootstrap-vcpkg.sh
+
+# Add vcpkg to PATH
+ENV PATH="$PATH:/usr/local/vcpkg/scripts"
+
+# # Clone duckdb_iceberg repository
+RUN mkdir /duckdb_iceberg && cd /duckdb_iceberg && wget https://github.com/devendrasr/duckdb_iceberg/archive/main.zip && unzip main.zip && mv duckdb_iceberg-main/* . && rm -rf main.zip
+
+RUN cd /duckdb_iceberg && rm -rf duckdb_iceberg-main && rm -rf duckdb && git clone https://github.com/duckdb/duckdb.git && cd duckdb && git checkout v0.10.0
+
+## Build duckdb_iceberg with vcpkg
+RUN cd /duckdb_iceberg \
+    && /usr/local/vcpkg/vcpkg install
+
+RUN cd /duckdb_iceberg && VCPKG_TOOLCHAIN_PATH=/usr/local/vcpkg/scripts/buildsystems/vcpkg.cmake make release
+
+FROM docker.io/python:3.11.1
+
+COPY --from=builder /duckdb_iceberg/build/release/repository /repository
+
+COPY --from=builder /duckdb_iceberg /duckdb_iceberg
+
+RUN pip install /duckdb_iceberg/duckdb/tools/pythonpkg
+
+ENV TINI_VERSION="v0.19.0"
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+RUN chmod +x /tini
+
+WORKDIR /src
+
+
+COPY . .
+
+RUN pip install -r dev-requirements.txt
+
+RUN python setup.py build \
+    && python setup.py install
+
+RUN rm -rf /duckdb_iceberg \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+
+EXPOSE 5433
+
+ENTRYPOINT ["/tini", "--"]
+CMD python -m buenavista.examples.duckdb_postgres

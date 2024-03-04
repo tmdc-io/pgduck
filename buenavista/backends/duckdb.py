@@ -10,6 +10,40 @@ from buenavista.core import BVType, Connection, QueryResult, Session
 
 logger = logging.getLogger(__name__)
 
+LIKE_ESCAPE_PATTERN = re.compile(r"(?i)(\s+)LIKE(\s+)(\w+)")
+ARRAY_UPPER_CURR_SCHEMA_ESCAPE_PATTERN = re.compile(
+        r"(?i)(\s+)array_upper(\s*)\((\s*)current_schemas(\s*)\((true|false)(\s*)\)(\s*),(\s*)\d(\s*)\)(\s*)\)"
+    )
+ARRAY_UPPER_ESCAPE_PATTERN = re.compile(r"(?i)(\s+)array_upper(\s*)\(")
+
+
+def _escape_match(group, replacement, replace):
+    def _escape(match):
+        token = match.group(group)
+        if replacement is not None:
+            return token.replace(token, replacement)
+        return token.replace(token, replace(token))
+    return _escape
+
+
+def _escape_unsupported_postgres_functions(query) -> str:
+    def _replace_array_upper_with_curr_schemas_cb(token):
+        if token.__contains__("TRUE") or token.__contains__("true"):
+            return " json_array_length(current_schemas(true))::BIGINT) "
+        else:
+            return " json_array_length(current_schemas(false))::BIGINT) "
+
+    def _escape_like_match(token):
+        return " LIKE " + token.replace(token, f"'{token}'")
+
+    query = ARRAY_UPPER_CURR_SCHEMA_ESCAPE_PATTERN.sub(_escape_match(0, None, _replace_array_upper_with_curr_schemas_cb), query)
+
+    query = ARRAY_UPPER_ESCAPE_PATTERN.sub(_escape_match(1, " json_array_length(", None), query)
+
+    query = LIKE_ESCAPE_PATTERN.sub(_escape_match(1, None, _escape_like_match), query)
+
+    return query
+
 
 def to_bvtype(t: pa.DataType) -> BVType:
     if pa.types.is_int64(t):
@@ -141,6 +175,13 @@ class DuckDBSession(Session):
         return self._cursor.query(f"select * from {table}")
 
     def rewrite_sql(self, sql: str) -> str:
+        print(f"original sql:\n{sql}")
+        # self._cursor.execute(
+        #     "SELECT * FROM duckdb_secrets()"
+        # ).fetchall()
+        # use some regex to replace certain unsupported postgres functions
+        sql = _escape_unsupported_postgres_functions(sql)
+        print(f"rewrite sql:\n{sql}")
         if sql.startswith("""SELECT d.datname AS "Name", pg_catalog.PG_GET_USERBYID(d.datdba)"""):
             sql = """SELECT d.datname AS "Name", 'NA' AS "Owner", 'UTF-8' AS "Encoding", 
             'en_US.utf8' AS "Collate", 'en_US.utf8' AS "Ctype", '' AS "Access privileges" FROM pg_catalog.pg_database
@@ -171,7 +212,11 @@ class DuckDBSession(Session):
         ):
             return "SELECT 32 as setting"
         elif "::regclass" in sql:
-            return sql.replace("::regclass", "")
+            return sql.replace("::regclass", "::string")
+        elif "::REGCLASS" in sql:
+            return sql.replace("::REGCLASS", "::string")
+        elif "AS REGCLASS" in sql:
+            return sql.replace("AS REGCLASS", "AS STRING")
         elif "::regtype" in sql:
             return sql.replace("::regtype", "")
         elif "::regproc" in sql:
@@ -183,6 +228,8 @@ class DuckDBSession(Session):
             )
         elif "pg_catalog.current_schemas" in sql:
             return sql.replace("pg_catalog.current_schemas", "current_schemas")
+        elif "pg_catalog.CURRENT_SCHEMAS" in sql:
+            return sql.replace("pg_catalog.CURRENT_SCHEMAS", "CURRENT_SCHEMAS")
         elif "pg_catalog.generate_series" in sql:
             return sql.replace("pg_catalog.generate_series", "generate_series")
         return sql
@@ -250,3 +297,30 @@ class DuckDBConnection(Connection):
         cursor = self.db.cursor()
         cursor.execute("SET search_path='main'")
         return DuckDBSession(cursor)
+
+
+# if __name__ == '__main__':
+#     def _replace_cb(token):
+#         if token.__contains__("TRUE") or token.__contains__("true"):
+#             return " json_array_length(current_schemas(true))::BIGINT "
+#         else:
+#             return " json_array_length(current_schemas(false))::BIGINT "
+#
+#     ARRAY_UPPER_ESCAPE = re.compile(r"(\s+)(?i)array_upper(\s*)\(")
+#     sql = "select * from generate_series(1, ARRAY_UppER(current_schemas(false), 1)) as s(r)"
+#     print(ARRAY_UPPER_ESCAPE.sub(_escape_match(1, " json_array_length(", None), sql))
+#     # sql = "select * from generate_series(1, ARRAY_UPPER (current_schemas(false), 1)) as s(r)"
+#     # print(ARRAY_UPPER_ESCAPE.sub(_escape_match(1, " json_array_length("), sql))
+#     # sql = "select * from generate_series(1, ARRAY_UPPER" \
+#     #       "(current_schemas(false), 1)) as s(r)"
+#     # print(ARRAY_UPPER_ESCAPE.sub(_escape_match(1, " json_array_length("), sql))
+#
+#     sql = "select * from generate_series(1, ARRAY_UPPER" \
+#           "(current_schemas(false), 1)) as s(r)"
+#     ARRAY_UPPER_CURR_SCHEMA_ESCAPE = re.compile(
+#         r"(?i)(\s+)array_upper(\s*)\((\s*)current_schemas(\s*)\((true|false)(\s*)\)(\s*),(\s*)\d(\s*)\)(\s*)\)"
+#     )
+#     print(ARRAY_UPPER_CURR_SCHEMA_ESCAPE.sub(_escape_match(0, None, _replace_cb), sql))
+#     sql = "select * from generate_series(1, ARRAY_UPPER" \
+#           "(current_schemas(TRUE), 1)) as s(r)"
+#     print(ARRAY_UPPER_CURR_SCHEMA_ESCAPE.sub(_escape_match(0, None, _replace_cb), sql))

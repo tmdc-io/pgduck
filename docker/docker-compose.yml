@@ -2,13 +2,13 @@ version: '3.7'
 
 services:
   pgduck:
-    image: rubiklabs/pgduck:0.0.3
+    image: rubiklabs/pgduck:0.0.7
     environment:
-      - BUENAVISTA_HOST=0.0.0.0
-      - BUENAVISTA_PORT=5433
+      - PGDUCK_HOST=0.0.0.0
     ports:
       - 5433:5433
+      - 5444:5444
       - 8282:8282
-    volumes:
-      - ./data:/data
-      - /Users/devendra/work/dataos/flare/dataout:/dataos
+#    volumes:
+#      - ./data:/data
+#      - /Users/devendra/work/dataos/flare/dataout:/dataos

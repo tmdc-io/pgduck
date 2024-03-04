@@ -81,7 +81,7 @@ def _duckdb_command_handler(self, expression):
                         like = tokens[4].replace(tokens[6], "")
                     else:
                         like = tokens[4]
-                    q += " AND table_name LIKE " + like
+                    # q += " AND table_name LIKE " + like
             else:
                 q += " WHERE table_schema IN (SELECT current_schema())"
                 if len(tokens) >= 3:
@@ -89,7 +89,7 @@ def _duckdb_command_handler(self, expression):
                         like = tokens[2].replace(tokens[4], "")
                     else:
                         like = tokens[2]
-                    q += " AND table_name LIKE " + like
+                    # q += " AND table_name LIKE " + like
             return q
         elif entity == "COLUMNS" and tokens[1].upper() == "FROM":
             return f"DESCRIBE {tokens[2]}"
