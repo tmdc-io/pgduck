@@ -36,9 +36,6 @@ if __name__ == "__main__":
     else:
         print("Using DuckDB database at %s" % sys.argv[1])
         db = duckdb.connect(sys.argv[1])
-    db.execute(
-        "SELECT * FROM duckdb_secrets()"
-    ).fetchall()
     official_extensions = []
     local_extensions = []
     secret_sqls = []
