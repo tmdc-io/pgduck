@@ -1,14 +1,18 @@
-version: '3.7'
+version: '3'
 
 services:
   pgduck:
-    image: rubiklabs/pgduck:0.0.7
-    environment:
-      - PGDUCK_HOST=0.0.0.0
+    image: rubiklabs/pgduck:0.0.9
     ports:
-      - 5433:5433
-      - 5444:5444
-      - 8282:8282
-#    volumes:
-#      - ./data:/data
-#      - /Users/devendra/work/dataos/flare/dataout:/dataos
+      - "5433:5433"
+      - "8282:8282"
+      - :5444:5444
+    environment:
+      - OFFICIAL_DUCKDB_EXTENSIONS=httpfs,aws,azure
+      - LOCAL_DUCKDB_EXTENSION_REPO=/repository
+      - LOCAL_DUCKDB_EXTENSIONS=iceberg
+      - PGDUCK_HOST=0.0.0.0
+      - PGDUCK_PORT=5433
+##    volumes:
+##      - ./data:/data
+##      - /Users/devendra/work/dataos/flare/dataout:/dataos
