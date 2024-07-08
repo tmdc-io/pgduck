@@ -1,0 +1,9 @@
+datasets:
+#  - address: dataos://s3iceberg:iceberg_sink_s3/ice_vinayak
+#    name: customer
+
+  - address: dataos://icebase:retail/customer
+    name: customer
+
+sqls:
+  - create table mycustomer as (select * from customer)

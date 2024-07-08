@@ -1,11 +1,11 @@
 #! make
-VERSION  = 0.0.10
+VERSION  = 0.0.1-dev
 
 build:
-	docker build -t rubiklabs/pgduck:$(VERSION) -f Dockerfile.pipeline ..
+	docker build -t rubiklabs/flash:$(VERSION) -f Dockerfile ..
 
 push:
-	docker push rubiklabs/pgduck:$(VERSION)
+	docker push rubiklabs/flash:$(VERSION)
 
 up:
 	docker-compose up -d

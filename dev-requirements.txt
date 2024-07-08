@@ -1,8 +1,11 @@
-duckdb==0.10.0
+duckdb==1.0.0
 fastapi[all]
+jproperties==2.1.1
 psycopg
 psycopg-pool
 pyarrow
 pydantic>=1.2.0,<2.0.0
 pytest
+PyYAML==6.0.1
+requests==2.30.0
 sqlglot

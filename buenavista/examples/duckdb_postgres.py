@@ -1,11 +1,14 @@
 import os
 import sys
 from typing import Tuple
-
+import json
 import duckdb
 
 from buenavista.backends.duckdb import DuckDBConnection
 from buenavista import bv_dialects, postgres, rewrite
+from utils.pg_duck_migrations import PgDuckMigrations
+from utils.utils import stack_spec_file
+from logger.logger import log
 
 
 class DuckDBPostgresRewriter(rewrite.Rewriter):
@@ -30,11 +33,11 @@ def create(
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Using in-memory DuckDB database")
+        log.info("Using in-memory DuckDB database")
         db = duckdb.connect(config={'allow_unsigned_extensions': 'true'})
         # db = duckdb.connect()
     else:
-        print("Using DuckDB database at %s" % sys.argv[1])
+        log.info("Using DuckDB database at %s" % sys.argv[1])
         db = duckdb.connect(sys.argv[1])
     official_extensions = []
     local_extensions = []
@@ -42,21 +45,27 @@ if __name__ == "__main__":
     local_extensions_repo = ""
     if "OFFICIAL_DUCKDB_EXTENSIONS" in os.environ:
         official_extensions_str = os.environ["OFFICIAL_DUCKDB_EXTENSIONS"]
-        print("official_extensions_str=" + official_extensions_str)
+        log.info("official_extensions_str=" + official_extensions_str)
         official_extensions = official_extensions_str.split(",")
 
     if "LOCAL_DUCKDB_EXTENSIONS" in os.environ:
         local_extensions_str = os.environ["LOCAL_DUCKDB_EXTENSIONS"]
-        print("local_extensions_str=" + local_extensions_str)
+        log.info("local_extensions_str=" + local_extensions_str)
         local_extensions = local_extensions_str.split(",")
 
     if "LOCAL_DUCKDB_EXTENSION_REPO" in os.environ:
         local_extensions_repo = os.environ["LOCAL_DUCKDB_EXTENSION_REPO"]
-        print("local_extensions_repo=" + local_extensions_repo)
+        log.info("local_extensions_repo=" + local_extensions_repo)
 
     if "DUCKDB_SECRET_SQLS" in os.environ:
         secret_sql_str = os.environ["DUCKDB_SECRET_SQLS"]
         secret_sqls = secret_sql_str.split("||")
+
+    if "INIT_SQLS" in os.environ:
+        init_sqls = os.environ["INIT_SQLS"].split(";")
+        for init_sql in init_sqls:
+            log.debug(f"running init sql - `{init_sql}`")
+            db.sql(init_sql)
 
     # install officially available duck extensions
     for e in official_extensions:
@@ -67,7 +76,7 @@ if __name__ == "__main__":
     # install locally available duck extensions
     if len(local_extensions_repo) > 0:
         custom_repo_sql = "set custom_extension_repository = '{0}'".format(local_extensions_repo)
-        print("custom_repo_sql=" + custom_repo_sql)
+        log.info("custom_repo_sql=" + custom_repo_sql)
         db.sql(custom_repo_sql)
         for e in local_extensions:
             e = e.strip()
@@ -81,19 +90,27 @@ if __name__ == "__main__":
             if len(s) > 0:
                 db.sql(s)
 
+    # Run migrations from stackSpec
+    config = stack_spec_file()
+    log.debug(f"config - `{json.dumps(config, indent=2)}`")
+    migrations = PgDuckMigrations(config, db)
+    migrations.execute_secret_sql()
+    migrations.execute_view_sql()
+    migrations.execute_table_sql()
+
     s_host = "0.0.0.0"
     s_port = 5433
 
-    if "PGDUCK_HOST" in os.environ:
-        s_host = os.environ["PGDUCK_HOST"]
+    if "PG_HOST" in os.environ:
+        s_host = os.environ["PG_HOST"]
 
-    if "PGDUCK_PORT" in os.environ:
-        s_port = int(os.environ["PGDUCK_PORT"])
+    if "PG _PORT" in os.environ:
+        s_port = int(os.environ["PG_PORT"])
 
     address = (s_host, s_port)
     server = create(db, address)
     ip, port = server.server_address
-    print(f"Listening on {ip}:{port}")
+    log.info(f"Listening on {ip}:{port}")
 
     try:
         server.serve_forever()

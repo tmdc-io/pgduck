@@ -1,0 +1,39 @@
+name: "flash-v1"
+version: v1alpha
+type: stack
+layer: user
+description: "flash stack version 1"
+stack:
+  name: flash
+  version: "1.0"
+  flavor: "python"
+  reconciler: "stackManager"
+  dataOsAddressJqFilters:
+    - .datasets[].address
+  secretProjection:
+    type: "propFile"
+  image:
+    registry: docker.io
+    repository: rubiklabs
+    image: flash
+    tag: 0.0.1-dev
+    auth:
+      imagePullSecret: dataos-container-registry
+  environmentVars:
+    CONFIG_FILE_PATH: /etc/dataos/config/serviceconfig.yaml
+    INIT_SQLS: "set azure_transport_option_type = 'curl';SET azure_read_transfer_concurrency = 5;"
+    OFFICIAL_DUCKDB_EXTENSIONS: httpfs,aws,azure,iceberg
+    PG_HOST: 0.0.0.0
+    PG_PORT: 5433
+  command:
+    - python
+  arguments:
+    - -m
+    - buenavista.examples.duckdb_postgres
+  stackSpecValueSchema:
+    jsonSchema: |
+      { "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "datasets": { "type": "array", "items": { "type": "object", "properties": { "address": { "type": "string" }, "name": { "type": "string" } }, "required": [ "address", "name" ] } }, "sqls": { "type": "array", "items": { "type": "string" } } }, "required": [ "datasets" ] }
+  serviceConfig:
+    configFileTemplate: |
+      serviceconfig.yaml: |
+      {{ toYaml .ApplicationSpec.StackSpec | indent 2 }}
