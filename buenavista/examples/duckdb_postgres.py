@@ -67,13 +67,14 @@ if __name__ == "__main__":
             log.debug(f"running init sql - `{init_sql}`")
             db.sql(init_sql)
 
-    # install officially available duck extensions
+    # Install officially available DuckDB extensions
     for e in official_extensions:
         e = e.strip()
         if len(e) > 0:
             db.install_extension(e)
             db.load_extension(e)
-    # install locally available duck extensions
+
+    # Install locally available DuckDB extensions
     if len(local_extensions_repo) > 0:
         custom_repo_sql = "set custom_extension_repository = '{0}'".format(local_extensions_repo)
         log.info("custom_repo_sql=" + custom_repo_sql)
@@ -84,6 +85,8 @@ if __name__ == "__main__":
                 db.install_extension(e)
                 db.load_extension(e)
         db.sql("reset custom_extension_repository")
+
+    # Execute secret SQLs
     if len(secret_sqls) > 0:
         for s in secret_sqls:
             s = s.strip()
@@ -104,7 +107,7 @@ if __name__ == "__main__":
     if "PG_HOST" in os.environ:
         s_host = os.environ["PG_HOST"]
 
-    if "PG _PORT" in os.environ:
+    if "PG_PORT" in os.environ:
         s_port = int(os.environ["PG_PORT"])
 
     address = (s_host, s_port)
@@ -115,7 +118,7 @@ if __name__ == "__main__":
     try:
         server.serve_forever()
     except Exception as e:
-        print(e)
+        log.error(f"Server encountered an error: {e}")
     finally:
         server.shutdown()
         db.close()

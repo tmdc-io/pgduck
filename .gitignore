@@ -81,3 +81,6 @@ target/
 .idea
 venv
 .env
+
+docker-run.sh
+help.txt

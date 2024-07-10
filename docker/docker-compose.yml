@@ -2,7 +2,7 @@ version: '3'
 
 services:
   pgduck:
-    image: rubiklabs/flash:0.0.1-dev
+    image: rubiklabs/flash:0.0.2
     ports:
       - "5433:5433"
       - "8282:8282"
@@ -19,3 +19,4 @@ services:
       - INIT_SQLS=set azure_transport_option_type = 'curl';SET azure_read_transfer_concurrency = 5;
     volumes:
       - ../stack:/stack
+      - ./secret:/secret

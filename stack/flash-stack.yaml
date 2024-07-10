@@ -16,7 +16,7 @@ stack:
     registry: docker.io
     repository: rubiklabs
     image: flash
-    tag: 0.0.1-dev
+    tag: 0.0.2
     auth:
       imagePullSecret: dataos-container-registry
   environmentVars:

@@ -6,8 +6,7 @@ tags:
 description: flash service
 workspace: public
 service:
-  servicePort: 9009
-  metricPort: 8010
+  servicePort: 5433
   replicas: 1
   logLevel: info
   compute: runnable-default
@@ -21,11 +20,11 @@ service:
   stack: flash+python:1.0
   stackSpec:
     datasets:
-      - address: dataos://s3iceberg:iceberg_sink_s3/ice_vinayak
-        name: customer
-#
-#      - address: dataos://icebase:retail/customer
+#      - address: dataos://s3iceberg:iceberg_sink_s3/ice_vinayak
 #        name: customer
-#
-#    sqls:
-#      - create table mycustomer as (select * from customer)
+
+      - address: dataos://icebase:retail/customer
+        name: customer
+
+    sqls:
+      - create table mycustomer as (select * from customer)

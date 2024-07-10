@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.4
-FROM docker.io/python:3.11.1
+FROM docker.io/python:3.11.1-slim
 
 ENV PYTHONUNBUFFERED=1
 ENV TZ=UTC
